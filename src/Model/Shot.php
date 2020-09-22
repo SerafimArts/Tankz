@@ -97,6 +97,9 @@ class Shot extends Model
     {
         \assert($parent instanceof Gun);
 
+        $this->rotation->center->x = $this->dest->w / 2;
+        $this->rotation->center->y = 0;
+
         $this->updateAnimation($delta);
         $this->updateReloading($delta);
 
@@ -163,7 +166,6 @@ class Shot extends Model
         $this->destModified->h = $this->dest->h + $deltaByte / 5;
 
         $target = $this->vp->transform($this->destModified, false);
-
 
         $this->sdl->SDL_SetTextureBlendMode($this->texture->ptr, BlendMode::SDL_BLENDMODE_ADD);
         $this->sdl->SDL_SetTextureAlphaMod($this->texture->ptr, $deltaByte);

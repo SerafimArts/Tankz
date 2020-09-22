@@ -16,6 +16,7 @@ use App\System\Kernel;
 use App\System\Texture;
 use FFI\CData;
 use Serafim\SDL\FRect;
+use Serafim\SDL\Kernel\Video\BlendMode;
 use Serafim\SDL\Kernel\Video\RendererFlip;
 use Serafim\SDL\SDL;
 
@@ -38,11 +39,16 @@ class UserInterface
     private Texture $user;
     private Texture $enemy;
     private Texture $reloading;
+    private Texture $health;
+    private Texture $healthEnd;
+
     private CData $uiDest;
     private CData $mapDest;
     private CData $userDest;
     private CData $userCenter;
     private CData $reloadingDest;
+    private CData $healthDest;
+    private CData $healthEndDest;
 
     /**
      * @var Tank|null
@@ -63,6 +69,8 @@ class UserInterface
         $this->user = Texture::fromPathname(self::ROOT . '/player.png');
         $this->enemy = Texture::fromPathname(self::ROOT . '/enemy.png');
         $this->reloading = Texture::fromPathname(self::ROOT . '/reloading.png');
+        $this->health = Texture::fromPathname(self::ROOT . '/hp-line.png');
+        $this->healthEnd = Texture::fromPathname(self::ROOT . '/hp-right.png');
 
         $this->sdl->SDL_SetTextureAlphaMod($this->bg->ptr, 130);
         $this->sdl->SDL_SetTextureAlphaMod($this->overlay->ptr, 230);
@@ -72,6 +80,18 @@ class UserInterface
         $this->uiDest->h = 140;
         $this->uiDest->x = 20;
         $this->uiDest->y = 920;
+
+        $this->healthDest = $this->sdl->new(FRect::class);
+        $this->healthDest->w = 1;
+        $this->healthDest->h = 9;
+        $this->healthDest->x = 174;
+        $this->healthDest->y = 1027;
+
+        $this->healthEndDest = $this->sdl->new(FRect::class);
+        $this->healthEndDest->w = 3;
+        $this->healthEndDest->h = 9;
+        $this->healthEndDest->x = 175;
+        $this->healthEndDest->y = 1027;
 
         $this->reloadingDest = $this->sdl->new(FRect::class);
         $this->reloadingDest->w = 0;
@@ -112,9 +132,16 @@ class UserInterface
     public function update(): void
     {
         if ($this->tank) {
+            // Reloading
             $delta = $this->tank->gun->shot->reloading / $this->tank->gun->shot->speed;
 
             $this->reloadingDest->w = self::RELOADING_MAX - $delta * self::RELOADING_MAX;
+
+            // Health
+            $delta = $this->tank->health->current / $this->tank->health->max;
+            $this->healthDest->w = $delta * 301;
+
+            $this->healthEndDest->x = $this->healthDest->x + $this->healthDest->w;
         }
     }
 
@@ -164,11 +191,27 @@ class UserInterface
             SDL::addr($this->vp->transform($this->uiDest, false))
         );
 
+        // Reloading
         $this->sdl->SDL_RenderCopyF(
             $this->renderer->ptr,
             $this->reloading->ptr,
             null,
             SDL::addr($this->vp->transform($this->reloadingDest, false))
+        );
+
+        // Health
+        $this->sdl->SDL_RenderCopyF(
+            $this->renderer->ptr,
+            $this->health->ptr,
+            null,
+            SDL::addr($this->vp->transform($this->healthDest, false))
+        );
+
+        $this->sdl->SDL_RenderCopyF(
+            $this->renderer->ptr,
+            $this->healthEnd->ptr,
+            null,
+            SDL::addr($this->vp->transform($this->healthEndDest, false))
         );
     }
 }

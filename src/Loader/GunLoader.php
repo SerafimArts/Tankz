@@ -51,8 +51,6 @@ class GunLoader extends Loader
         $shot->dest->w = Arr::get($data, 'size.width', 100);
         $shot->dest->h = Arr::get($data, 'size.height', 100);
 
-        $shot->rotation->center->x = $shot->dest->w / 2;
-
         return $shot;
     }
 }

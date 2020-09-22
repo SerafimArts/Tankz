@@ -20,6 +20,7 @@ use App\Server\Protocol\CreatePlayerTank;
 use App\Server\Protocol\CreateTank;
 use App\Server\Protocol\Message;
 use App\Server\Protocol\SessionEstablish;
+use App\Server\Protocol\Shot;
 use App\Server\Protocol\UpdateTank;
 use App\System\Texture;
 use App\Ui\UserInterface;
@@ -89,8 +90,8 @@ class GameController extends Controller
 
         parent::__construct();
 
-        $this->connection = $this->connect($uri);
-        //$this->offline();
+        //$this->connection = $this->connect($uri);
+        $this->offline();
     }
 
     /**
@@ -143,6 +144,10 @@ class GameController extends Controller
 
                 case $message instanceof CreateTank:
                     $this->onCreateTank($message);
+                    break;
+
+                case $message instanceof Shot:
+                    $this->onShot($message);
                     break;
 
                 case $message instanceof SessionEstablish:
@@ -225,6 +230,16 @@ class GameController extends Controller
     }
 
     /**
+     * @return void
+     */
+    private function shoot(): void
+    {
+        $this->tank->shot();
+
+        $this->send(new Shot(['id' => $this->id]));
+    }
+
+    /**
      * @param CData|KeyboardEvent $event
      */
     private function onKeyDown(CData $event): void
@@ -235,7 +250,7 @@ class GameController extends Controller
 
         switch ($event->keysym->scancode) {
             case ScanCode::SDL_SCANCODE_SPACE:
-                $this->tank->shot();
+                $this->shoot();
                 break;
 
             case ScanCode::SDL_SCANCODE_DOWN:
@@ -312,12 +327,6 @@ class GameController extends Controller
             return;
         }
 
-        $this->tank->health->current -= 1 * $delta;
-
-        if ($this->tank->health->current < 0) {
-            $this->tank->health->reset();
-        }
-
         $message = new UpdateTank([
             'id'    => $this->id,
             'pos-x' => (float)$this->tank->dest->x,
@@ -350,5 +359,14 @@ class GameController extends Controller
         if ($this->map) {
             $this->map->render();
         }
+    }
+
+    /**
+     * @param Shot $message
+     */
+    private function onShot(Shot $message): void
+    {
+        $tank = $this->objects[$message['id']];
+        $tank->shot();
     }
 }
