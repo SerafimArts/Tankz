@@ -17,10 +17,9 @@ use App\System\Texture;
 use FFI\CData;
 use Serafim\SDL\FRect;
 use Serafim\SDL\Kernel\Video\RendererFlip;
-use Serafim\SDL\Rect;
 use Serafim\SDL\SDL;
 
-class Map
+class UserInterface
 {
     use Kernel;
 
@@ -46,18 +45,19 @@ class Map
     private CData $reloadingDest;
 
     /**
-     * @var Tank
+     * @var Tank|null
      */
-    private Tank $tank;
+    private ?Tank $tank = null;
 
     /**
-     * @param Tank $tank
+     * @var Tank[]
      */
-    public function __construct(Tank $tank)
+    private array $enemyTanks = [];
+
+    public function __construct()
     {
         $this->bootKernel();
 
-        $this->tank = $tank;
         $this->bg = Texture::fromPathname(self::ROOT . '/bg.png');
         $this->overlay = Texture::fromPathname(self::ROOT . '/overlay.png');
         $this->user = Texture::fromPathname(self::ROOT . '/player.png');
@@ -96,15 +96,26 @@ class Map
         $this->userDest->y = 30;
     }
 
+    /**
+     * @param Tank $tank
+     */
+    public function addEnemyTank(Tank $tank): void
+    {
+        $this->enemyTanks[] = $tank;
+    }
+
+    public function addPlayerTank(Tank $tank): void
+    {
+        $this->tank = $tank;
+    }
+
     public function update(): void
     {
-        $this->userDest->x = $this->tank->dest->x / 1920 * 110 + 10 + $this->uiDest->x;
-        $this->userDest->y = $this->tank->dest->y / 1080 * 110 + 10 + $this->uiDest->y;
+        if ($this->tank) {
+            $delta = $this->tank->gun->shot->reloading / $this->tank->gun->shot->speed;
 
-        //
-        $delta = $this->tank->gun->shot->reloading / $this->tank->gun->shot->speed;
-
-        $this->reloadingDest->w = self::RELOADING_MAX - $delta * self::RELOADING_MAX;
+            $this->reloadingDest->w = self::RELOADING_MAX - $delta * self::RELOADING_MAX;
+        }
     }
 
     public function render(): void
@@ -116,15 +127,35 @@ class Map
             SDL::addr($this->vp->transform($this->mapDest, false))
         );
 
-        $this->sdl->SDL_RenderCopyExF(
-            $this->renderer->ptr,
-            $this->user->ptr,
-            null,
-            SDL::addr($this->vp->transform($this->userDest, false)),
-            $this->tank->rotation->angle,
-            SDL::addr($this->userCenter),
-            RendererFlip::SDL_FLIP_NONE
-        );
+        if ($this->tank !== null) {
+            $this->userDest->x = $this->tank->dest->x / 1920 * 110 + 10 + $this->uiDest->x;
+            $this->userDest->y = $this->tank->dest->y / 1080 * 110 + 10 + $this->uiDest->y;
+
+            $this->sdl->SDL_RenderCopyExF(
+                $this->renderer->ptr,
+                $this->user->ptr,
+                null,
+                SDL::addr($this->vp->transform($this->userDest, false)),
+                $this->tank->rotation->angle,
+                SDL::addr($this->userCenter),
+                RendererFlip::SDL_FLIP_NONE
+            );
+        }
+
+        foreach ($this->enemyTanks as $enemy) {
+            $this->userDest->x = $enemy->dest->x / 1920 * 110 + 10 + $this->uiDest->x;
+            $this->userDest->y = $enemy->dest->y / 1080 * 110 + 10 + $this->uiDest->y;
+
+            $this->sdl->SDL_RenderCopyExF(
+                $this->renderer->ptr,
+                $this->enemy->ptr,
+                null,
+                SDL::addr($this->vp->transform($this->userDest, false)),
+                $enemy->rotation->angle,
+                SDL::addr($this->userCenter),
+                RendererFlip::SDL_FLIP_NONE
+            );
+        }
 
         $this->sdl->SDL_RenderCopyF(
             $this->renderer->ptr,

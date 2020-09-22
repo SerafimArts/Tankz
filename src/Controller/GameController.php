@@ -22,7 +22,7 @@ use App\Server\Protocol\Message;
 use App\Server\Protocol\SessionEstablish;
 use App\Server\Protocol\UpdateTank;
 use App\System\Texture;
-use App\Ui\Map;
+use App\Ui\UserInterface;
 use FFI\CData;
 use Serafim\SDL\Event;
 use Serafim\SDL\Kernel\Keyboard\ScanCode;
@@ -53,14 +53,14 @@ class GameController extends Controller
     private Texture $bg;
 
     /**
-     * @var Map|null
+     * @var UserInterface|null
      */
-    private ?Map $map = null;
+    private ?UserInterface $map = null;
 
     /**
-     * @var Connection
+     * @var Connection|null
      */
-    private Connection $connection;
+    private ?Connection $connection = null;
 
     /**
      * @var array|Tank[]
@@ -85,10 +85,47 @@ class GameController extends Controller
         $this->tanks = new TankLoader(self::RESOURCES_DIR);
         $this->guns = new GunLoader(self::RESOURCES_DIR);
         $this->bg = Texture::fromPathname(self::RESOURCES_DIR . '/bg.png');
+        $this->map = new UserInterface();
 
         parent::__construct();
 
         $this->connection = $this->connect($uri);
+        //$this->offline();
+    }
+
+    /**
+     * @return void
+     */
+    private function offline(): void
+    {
+        $this->tank = $this->createTank(
+            'tank/black/tank.json',
+            'gun/1/gun.json'
+        );
+
+        $this->map->addPlayerTank($this->tank);
+
+        $this->objects[] = $this->tank;
+    }
+
+    /**
+     * @param $message
+     */
+    private function send($message): void
+    {
+        if ($this->connection) {
+            $this->connection->write($message);
+        }
+    }
+
+    /**
+     * @param string $tank
+     * @param string $gun
+     * @return Tank
+     */
+    private function createTank(string $tank, string $gun): Tank
+    {
+        return $this->tanks->load($tank, $this->guns->load($gun));
     }
 
     /**
@@ -122,11 +159,13 @@ class GameController extends Controller
     private function onUpdateTank(UpdateTank $cmd): void
     {
         $tank = $this->objects[$cmd['id']];
-        $tank->dest->x = (float)$cmd['pos-x'];
-        $tank->dest->y = (float)$cmd['pos-y'];
+        $tank->dest->x = $cmd['pos-x'];
+        $tank->dest->y = $cmd['pos-y'];
+        $tank->velocity->x = $cmd['vel-x'];
+        $tank->velocity->y = $cmd['vel-y'];
         $tank->rotation->angle = (float)$cmd['angle'];
-        $tank->gun->rotation->angle =
-            $tank->gun->rotation->target = (float)$cmd['gun'];
+        $tank->gun->rotation->angle = $tank->gun->rotation->target
+            = (float)$cmd['gun'];
     }
 
     /**
@@ -134,13 +173,14 @@ class GameController extends Controller
      */
     private function onCreateTank(CreateTank $cmd): void
     {
-        $gun = $this->guns->load($cmd['gun']);
-        $tank = $this->tanks->load($cmd['tank'], $gun);
+        $tank = $this->createTank($cmd['tank'], $cmd['gun']);
 
         if ($cmd instanceof CreatePlayerTank) {
             $this->id = $cmd['id'];
             $this->tank = $tank;
-            $this->map = new Map($tank);
+            $this->map->addPlayerTank($tank);
+        } else {
+            $this->map->addEnemyTank($tank);
         }
 
         $tank->dest->x = $cmd['position.x'];
@@ -257,28 +297,38 @@ class GameController extends Controller
      */
     public function update(float $delta): void
     {
-        $this->connection->tick();
+        if ($this->connection) {
+            $this->connection->tick();
+        }
 
         foreach ($this->objects as $tank) {
             $tank->update($delta);
             $tank->limit(1920, 1080);
         }
 
-        if (!$this->map) {
+        $this->map->update();
+
+        if (! $this->tank) {
             return;
         }
 
-        $this->map->update();
+        $this->tank->health->current -= 1 * $delta;
+
+        if ($this->tank->health->current < 0) {
+            $this->tank->health->reset();
+        }
 
         $message = new UpdateTank([
             'id'    => $this->id,
             'pos-x' => (float)$this->tank->dest->x,
             'pos-y' => (float)$this->tank->dest->y,
+            'vel-x' => (float)$this->tank->velocity->x,
+            'vel-y' => (float)$this->tank->velocity->x,
             'angle' => (float)$this->tank->rotation->angle,
             'gun'   => (float)$this->tank->gun->rotation->angle,
         ]);
 
-        $this->connection->write($message);
+        $this->send($message);
     }
 
     /**

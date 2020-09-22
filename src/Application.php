@@ -88,7 +88,7 @@ class Application implements WorkerInterface
         $this->controller = new GameController($uri);
 
         $this->window->show();
-        $this->loop->run(60, 128);
+        $this->loop->run(60, 60);
     }
 
     /**

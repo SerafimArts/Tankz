@@ -11,8 +11,8 @@ declare(strict_types=1);
 
 namespace App\Model;
 
-use App\Math\Utils;
 use App\Model\Tank\GunPosition;
+use App\Model\Tank\Health;
 use App\Model\Tank\Rotation;
 use App\Model\Tank\State;
 use App\Model\Tank\Velocity;
@@ -37,12 +37,17 @@ class Tank extends Model
     /**
      * @var float
      */
-    public float $friction = 1.002;
+    public float $friction = 1.01;
 
     /**
      * @var float|int
      */
     public float $speed = 300;
+
+    /**
+     * @var Health
+     */
+    public Health $health;
 
     /**
      * @var int
@@ -81,6 +86,7 @@ class Tank extends Model
         $this->texture = $texture;
         $this->velocity = new Velocity();
         $this->rotation = new Rotation();
+        $this->health = new Health();
         $this->gunPosition = new GunPosition();
         $this->dest = $this->sdl->new(FRect::class);
 
