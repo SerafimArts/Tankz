@@ -28,7 +28,7 @@ class TankLoader extends Loader
     {
         $data = $this->read($file, ['texture']);
 
-        $tank = new Tank($this->texture($file, $data['texture']), $this->gun($gun));
+        $tank = new Tank($this->texture($file, $data['texture']), $this->gun($gun), $this->world);
         $tank->dest->w = Arr::get($data, 'width', 100);
         $tank->dest->h = Arr::get($data, 'height', 100);
 

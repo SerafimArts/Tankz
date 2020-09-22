@@ -21,6 +21,7 @@ use FFI\CData;
 use Serafim\SDL\FRect;
 use Serafim\SDL\Rect;
 use Serafim\SDL\SDL;
+use App\Math\Rect as MathRect;
 
 class Tank extends Model
 {
@@ -75,15 +76,33 @@ class Tank extends Model
     private Texture $texture;
 
     /**
+     * @var array|Bullet[]
+     */
+    private array $bullets = [];
+
+    /**
+     * @var Texture
+     */
+    private Texture $bullet;
+
+    /**
+     * @var MathRect
+     */
+    private MathRect $world;
+
+    /**
      * @param Texture $texture
      * @param Gun $gun
+     * @param MathRect $world
      */
-    public function __construct(Texture $texture, Gun $gun)
+    public function __construct(Texture $texture, Gun $gun, MathRect $world)
     {
         parent::__construct();
 
         $this->gun = $gun;
+        $this->world = $world;
         $this->texture = $texture;
+        $this->bullet = Texture::fromPathname(__DIR__ . '/../../resources/tank/bullet.png');
         $this->velocity = new Velocity();
         $this->rotation = new Rotation();
         $this->health = new Health();
@@ -140,7 +159,19 @@ class Tank extends Model
         $this->updatePosition($delta);
 
         if ($this->state & State::STATE_SHOOT) {
+            if ($this->gun->isReloaded()) {
+                $this->bullets[] = new Bullet($this->bullet, $this->gun);
+            }
+
             $this->gun->shot();
+        }
+
+        foreach ($this->bullets as $i => $bullet) {
+            $bullet->update($delta, $this);
+
+            if (! $this->world->contains($bullet->dest->x, $bullet->dest->y)) {
+                unset($this->bullets[$i]);
+            }
         }
 
         if (!($this->state & State::STATE_ROTATED)) {
@@ -210,6 +241,7 @@ class Tank extends Model
 
     /**
      * @return void
+     * @throws \Exception
      */
     public function render(): void
     {
@@ -224,6 +256,10 @@ class Tank extends Model
             SDL::addr($this->rotation->center),
             SDL::SDL_FLIP_NONE
         );
+
+        foreach ($this->bullets as $bullet) {
+            $bullet->render();
+        }
 
         $this->gun->render();
     }

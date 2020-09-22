@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace App\Loader;
 
+use App\Math\Rect;
 use App\System\Texture;
 use Illuminate\Support\Arr;
 
@@ -22,11 +23,18 @@ abstract class Loader implements LoaderInterface
     private string $resources;
 
     /**
-     * @param string $resources
+     * @var Rect
      */
-    public function __construct(string $resources)
+    protected Rect $world;
+
+    /**
+     * @param string $resources
+     * @param Rect $world
+     */
+    public function __construct(string $resources, Rect $world)
     {
         $this->resources = \realpath($resources);
+        $this->world = $world;
     }
 
     /**

@@ -13,6 +13,7 @@ namespace App\Controller;
 
 use App\Loader\GunLoader;
 use App\Loader\TankLoader;
+use App\Math\Rect;
 use App\Model\Tank;
 use App\Model\Tank\State;
 use App\Server\Connection;
@@ -83,8 +84,10 @@ class GameController extends Controller
      */
     public function __construct(string $uri)
     {
-        $this->tanks = new TankLoader(self::RESOURCES_DIR);
-        $this->guns = new GunLoader(self::RESOURCES_DIR);
+        $world = new Rect(0, 0, 1920, 1080);
+
+        $this->tanks = new TankLoader(self::RESOURCES_DIR, $world);
+        $this->guns = new GunLoader(self::RESOURCES_DIR, $world);
         $this->bg = Texture::fromPathname(self::RESOURCES_DIR . '/bg.png');
         $this->map = new UserInterface();
 

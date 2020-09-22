@@ -11,9 +11,7 @@ declare(strict_types=1);
 
 namespace App\Model;
 
-use App\Math\Matrix;
 use App\Math\Utils;
-use App\Model\Gun\GunPosition;
 use App\Model\Gun\Rotation;
 use App\System\Texture;
 use FFI\CData;
@@ -55,6 +53,14 @@ class Gun extends Model
         $this->texture = $texture;
         $this->rotation = new Rotation();
         $this->dest = $this->sdl->new(FRect::class);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isReloaded(): bool
+    {
+        return $this->shot->reloading === 0.0;
     }
 
     /**
@@ -126,6 +132,7 @@ class Gun extends Model
 
     /**
      * @return void
+     * @throws \Exception
      */
     public function render(): void
     {

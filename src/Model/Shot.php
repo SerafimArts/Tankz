@@ -30,7 +30,7 @@ class Shot extends Model
     /**
      * @var float
      */
-    public float $speed = .3;
+    public float $speed = 1;
 
     /**
      * @var float
@@ -105,11 +105,9 @@ class Shot extends Model
 
         [$x, $y] = Utils::rotate(
             // Вращение
-            0,
-            52,
+            0, 52,
             // Вокруг
-            0,
-            12,
+            0, 12,
             //
             $parent->rotation->angle,
         );
