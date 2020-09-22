@@ -1,0 +1,11 @@
+{
+    "texture": "body.png",
+    "gun": {
+        "x": 50,
+        "y": 56
+    },
+    "size": {
+        "width": 84,
+        "height": 80
+    }
+}

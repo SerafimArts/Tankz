@@ -1,0 +1,19 @@
+{
+    "require": {
+        "ext-ffi": "*",
+        "ext-json": "*",
+        "serafim/ffi-sdl": "^1.0",
+        "serafim/ffi-sdl-image": "^1.0",
+        "illuminate/support": "^7.0",
+        "monolog/monolog": "^2.1",
+        "react/socket": "^1.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src"
+        }
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^5.1"
+    }
+}
